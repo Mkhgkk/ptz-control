@@ -25,6 +25,17 @@
           .then((response) => response.json())
           .then((data) => console.log(data));
       }
+
+      function stopCamera() {
+        fetch("/stop", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => console.log(data));
+      }
     </script>
   </head>
   <body>
@@ -42,6 +53,9 @@
     <div>
       <button class="button" onclick="moveCamera('zoom_in')">Zoom In</button>
       <button class="button" onclick="moveCamera('zoom_out')">Zoom Out</button>
+    </div>
+    <div>
+      <button class="button" onclick="stopCamera()">Stop</button>
     </div>
   </body>
 </html>

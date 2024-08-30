@@ -5,7 +5,7 @@ from time import sleep
 app = Flask(__name__)
 
 # Camera configuration
-CAMERA_IP = '192.168.0.128'
+CAMERA_IP = '192.168.0.133'
 CAMERA_PORT = 80
 USERNAME = 'root'
 PASSWORD = 'fsnetworks1!'
@@ -29,54 +29,61 @@ def move():
     move_camera(direction)
     return jsonify({'status': 'success'})
 
+@app.route('/stop', methods=['POST'])
+def stop():
+    stop_camera()
+    return jsonify({'status': 'stopped'})
+
 def move_camera(direction):
     """Function to move camera based on the direction input."""
-    # Create a RelativeMove request
-    relative_move_request = ptz_service.create_type('RelativeMove')
-    relative_move_request.ProfileToken = profile_token
+    # Create a ContinuousMove request
+    continuous_move_request = ptz_service.create_type('ContinuousMove')
+    continuous_move_request.ProfileToken = profile_token
 
-    # Define the movement increments for pan, tilt, and zoom
-    pan_increment = 0.1   # Smaller increment for pan movement
-    tilt_increment = 0.1  # Smaller increment for tilt movement
-    zoom_increment = 0.1  # Smaller increment for zoom movement
-
-    # Initialize the PTZ vector types correctly
-    relative_move_request.Translation = {
+    # Initialize the PTZ speed vector correctly
+    continuous_move_request.Velocity = {
         'PanTilt': {'x': 0.0, 'y': 0.0},
         'Zoom': {'x': 0.0}
     }
 
-    # Set the increments for each direction
+    # Define the speed for each direction
+    pan_speed = 0.1  # Speed for pan movement
+    tilt_speed = 0.1  # Speed for tilt movement
+    zoom_speed = 0.1  # Speed for zoom movement
+
+    # Set the speed for each direction
     if direction == 'up':
-        relative_move_request.Translation['PanTilt']['y'] = tilt_increment
+        continuous_move_request.Velocity['PanTilt']['y'] = tilt_speed
     elif direction == 'down':
-        relative_move_request.Translation['PanTilt']['y'] = -tilt_increment
+        continuous_move_request.Velocity['PanTilt']['y'] = -tilt_speed
     elif direction == 'left':
-        relative_move_request.Translation['PanTilt']['x'] = -pan_increment
+        continuous_move_request.Velocity['PanTilt']['x'] = -pan_speed
     elif direction == 'right':
-        relative_move_request.Translation['PanTilt']['x'] = pan_increment
+        continuous_move_request.Velocity['PanTilt']['x'] = pan_speed
     elif direction == 'zoom_in':
-        relative_move_request.Translation['Zoom']['x'] = zoom_increment
+        continuous_move_request.Velocity['Zoom']['x'] = zoom_speed
     elif direction == 'zoom_out':
-        relative_move_request.Translation['Zoom']['x'] = -zoom_increment
+        continuous_move_request.Velocity['Zoom']['x'] = -zoom_speed
 
-    # Optionally, define the speed (if supported by the camera)
-    relative_move_request.Speed = {
-        'PanTilt': {'x': 0.5, 'y': 0.5},
-        'Zoom': {'x': 0.5}
-    }
-
-    # Execute the RelativeMove command
+    # Execute the ContinuousMove command
     try:
-        ptz_service.RelativeMove(relative_move_request)
-        print(f"Camera moved {direction} successfully.")
+        ptz_service.ContinuousMove(continuous_move_request)
+        print(f"Camera moving {direction} continuously.")
     except Exception as e:
         print(f"An error occurred: {e}")
 
-    # Optional: Wait for the camera to move and then stop
-    sleep(1)
-    ptz_service.Stop({'ProfileToken': profile_token})
-    print("Camera movement stopped.")
+def stop_camera():
+    """Function to stop the camera movement."""
+    stop_request = ptz_service.create_type('Stop')
+    stop_request.ProfileToken = profile_token
+    stop_request.PanTilt = True  # Stop PanTilt movement
+    stop_request.Zoom = True     # Stop Zoom movement
+    
+    try:
+        ptz_service.Stop(stop_request)
+        print("Camera movement stopped.")
+    except Exception as e:
+        print(f"An error occurred while stopping: {e}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
