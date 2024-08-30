@@ -31,30 +31,44 @@ def move():
 
 def move_camera(direction):
     """Function to move camera based on the direction input."""
-    # Create an AbsoluteMove request
-    absolute_move_request = ptz_service.create_type('AbsoluteMove')
-    absolute_move_request.ProfileToken = profile_token
+    # Create a RelativeMove request
+    relative_move_request = ptz_service.create_type('RelativeMove')
+    relative_move_request.ProfileToken = profile_token
 
-    # Define the positions for each direction
+    # Define the movement increments for pan, tilt, and zoom
+    pan_increment = 0.1   # Smaller increment for pan movement
+    tilt_increment = 0.1  # Smaller increment for tilt movement
+    zoom_increment = 0.1  # Smaller increment for zoom movement
+
+    # Initialize the PTZ vector types correctly
+    relative_move_request.Translation = {
+        'PanTilt': {'x': 0.0, 'y': 0.0},
+        'Zoom': {'x': 0.0}
+    }
+
+    # Set the increments for each direction
     if direction == 'up':
-        absolute_move_request.Position = {'PanTilt': {'x': 0.0, 'y': 1.0}, 'Zoom': {'x': 0.0}}
+        relative_move_request.Translation['PanTilt']['y'] = tilt_increment
     elif direction == 'down':
-        absolute_move_request.Position = {'PanTilt': {'x': 0.0, 'y': -1.0}, 'Zoom': {'x': 0.0}}
+        relative_move_request.Translation['PanTilt']['y'] = -tilt_increment
     elif direction == 'left':
-        absolute_move_request.Position = {'PanTilt': {'x': -1.0, 'y': 0.0}, 'Zoom': {'x': 0.0}}
+        relative_move_request.Translation['PanTilt']['x'] = -pan_increment
     elif direction == 'right':
-        absolute_move_request.Position = {'PanTilt': {'x': 1.0, 'y': 0.0}, 'Zoom': {'x': 0.0}}
+        relative_move_request.Translation['PanTilt']['x'] = pan_increment
     elif direction == 'zoom_in':
-        absolute_move_request.Position = {'PanTilt': {'x': 0.0, 'y': 0.0}, 'Zoom': {'x': 1.0}}
+        relative_move_request.Translation['Zoom']['x'] = zoom_increment
     elif direction == 'zoom_out':
-        absolute_move_request.Position = {'PanTilt': {'x': 0.0, 'y': 0.0}, 'Zoom': {'x': -1.0}}
+        relative_move_request.Translation['Zoom']['x'] = -zoom_increment
 
     # Optionally, define the speed (if supported by the camera)
-    absolute_move_request.Speed = {'PanTilt': {'x': 0.5, 'y': 0.5}, 'Zoom': {'x': 0.5}}
+    relative_move_request.Speed = {
+        'PanTilt': {'x': 0.5, 'y': 0.5},
+        'Zoom': {'x': 0.5}
+    }
 
-    # Execute the AbsoluteMove command
+    # Execute the RelativeMove command
     try:
-        ptz_service.AbsoluteMove(absolute_move_request)
+        ptz_service.RelativeMove(relative_move_request)
         print(f"Camera moved {direction} successfully.")
     except Exception as e:
         print(f"An error occurred: {e}")
