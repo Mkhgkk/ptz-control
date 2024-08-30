@@ -14,13 +14,18 @@
       }
     </style>
     <script>
-      function moveCamera(direction) {
+      function moveCamera(direction, zoomAmount = null) {
+        const payload = { direction: direction };
+        if (zoomAmount !== null) {
+          payload.zoom_amount = zoomAmount; // Include zoom amount in the payload
+        }
+
         fetch("/move", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ direction: direction }),
+          body: JSON.stringify(payload),
         })
           .then((response) => response.json())
           .then((data) => console.log(data));
@@ -51,8 +56,26 @@
       <button class="button" onclick="moveCamera('down')">Down</button>
     </div>
     <div>
-      <button class="button" onclick="moveCamera('zoom_in')">Zoom In</button>
-      <button class="button" onclick="moveCamera('zoom_out')">Zoom Out</button>
+      <input
+        type="number"
+        id="zoomAmount"
+        placeholder="Zoom Level"
+        step="0.1"
+        min="0"
+        max="1"
+      />
+      <button
+        class="button"
+        onclick="moveCamera('zoom_in', document.getElementById('zoomAmount').value)"
+      >
+        Zoom In
+      </button>
+      <button
+        class="button"
+        onclick="moveCamera('zoom_out', document.getElementById('zoomAmount').value)"
+      >
+        Zoom Out
+      </button>
     </div>
     <div>
       <button class="button" onclick="stopCamera()">Stop</button>

@@ -26,7 +26,8 @@ def index():
 @app.route('/move', methods=['POST'])
 def move():
     direction = request.json['direction']
-    move_camera(direction)
+    zoom_amount = request.json.get('zoom_amount', None)  # Get zoom amount if provided
+    move_camera(direction, zoom_amount)
     return jsonify({'status': 'success'})
 
 @app.route('/stop', methods=['POST'])
@@ -34,43 +35,57 @@ def stop():
     stop_camera()
     return jsonify({'status': 'stopped'})
 
-def move_camera(direction):
-    """Function to move camera based on the direction input."""
-    # Create a ContinuousMove request
-    continuous_move_request = ptz_service.create_type('ContinuousMove')
-    continuous_move_request.ProfileToken = profile_token
+def move_camera(direction, zoom_amount=None):
+    """Function to move camera based on the direction input or zoom to a specific level."""
+    
+    # Check if the command is for zoom
+    if direction in ['zoom_in', 'zoom_out'] and zoom_amount is not None:
+        # Use AbsoluteMove for zoom
+        absolute_move_request = ptz_service.create_type('AbsoluteMove')
+        absolute_move_request.ProfileToken = profile_token
 
-    # Initialize the PTZ speed vector correctly
-    continuous_move_request.Velocity = {
-        'PanTilt': {'x': 0.0, 'y': 0.0},
-        'Zoom': {'x': 0.0}
-    }
+        # Define the absolute zoom level
+        absolute_move_request.Position = {'Zoom': {'x': zoom_amount}}
+        absolute_move_request.Speed = {'Zoom': {'x': 0.5}}  # Optional: Define zoom speed
 
-    # Define the speed for each direction
-    pan_speed = 0.1  # Speed for pan movement
-    tilt_speed = 0.1  # Speed for tilt movement
-    zoom_speed = 0.1  # Speed for zoom movement
+        # Execute the AbsoluteMove command
+        try:
+            ptz_service.AbsoluteMove(absolute_move_request)
+            print(f"Camera zoomed to level {zoom_amount}.")
+        except Exception as e:
+            print(f"An error occurred during zoom: {e}")
+    
+    else:
+        # Use ContinuousMove for pan and tilt
+        continuous_move_request = ptz_service.create_type('ContinuousMove')
+        continuous_move_request.ProfileToken = profile_token
 
-    # Set the speed for each direction
-    if direction == 'up':
-        continuous_move_request.Velocity['PanTilt']['y'] = tilt_speed
-    elif direction == 'down':
-        continuous_move_request.Velocity['PanTilt']['y'] = -tilt_speed
-    elif direction == 'left':
-        continuous_move_request.Velocity['PanTilt']['x'] = -pan_speed
-    elif direction == 'right':
-        continuous_move_request.Velocity['PanTilt']['x'] = pan_speed
-    elif direction == 'zoom_in':
-        continuous_move_request.Velocity['Zoom']['x'] = zoom_speed
-    elif direction == 'zoom_out':
-        continuous_move_request.Velocity['Zoom']['x'] = -zoom_speed
+        # Initialize the PTZ speed vector correctly
+        continuous_move_request.Velocity = {
+            'PanTilt': {'x': 0.0, 'y': 0.0},
+            'Zoom': {'x': 0.0}
+        }
 
-    # Execute the ContinuousMove command
-    try:
-        ptz_service.ContinuousMove(continuous_move_request)
-        print(f"Camera moving {direction} continuously.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        # Define the speed for each direction
+        pan_speed = 0.1  # Speed for pan movement
+        tilt_speed = 0.1  # Speed for tilt movement
+
+        # Set the speed for each direction
+        if direction == 'up':
+            continuous_move_request.Velocity['PanTilt']['y'] = tilt_speed
+        elif direction == 'down':
+            continuous_move_request.Velocity['PanTilt']['y'] = -tilt_speed
+        elif direction == 'left':
+            continuous_move_request.Velocity['PanTilt']['x'] = -pan_speed
+        elif direction == 'right':
+            continuous_move_request.Velocity['PanTilt']['x'] = pan_speed
+
+        # Execute the ContinuousMove command
+        try:
+            ptz_service.ContinuousMove(continuous_move_request)
+            print(f"Camera moving {direction} continuously.")
+        except Exception as e:
+            print(f"An error occurred during movement: {e}")
 
 def stop_camera():
     """Function to stop the camera movement."""
