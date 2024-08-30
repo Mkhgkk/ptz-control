@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PTZ Camera Control</title>
+    <style>
+      .button {
+        width: 100px;
+        height: 50px;
+        font-size: 18px;
+        margin: 10px;
+      }
+    </style>
+    <script>
+      function moveCamera(direction) {
+        fetch("/move", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ direction: direction }),
+        })
+          .then((response) => response.json())
+          .then((data) => console.log(data));
+      }
+    </script>
+  </head>
+  <body>
+    <h1>PTZ Camera Control</h1>
+    <div>
+      <button class="button" onclick="moveCamera('up')">Up</button>
+    </div>
+    <div>
+      <button class="button" onclick="moveCamera('left')">Left</button>
+      <button class="button" onclick="moveCamera('right')">Right</button>
+    </div>
+    <div>
+      <button class="button" onclick="moveCamera('down')">Down</button>
+    </div>
+    <div>
+      <button class="button" onclick="moveCamera('zoom_in')">Zoom In</button>
+      <button class="button" onclick="moveCamera('zoom_out')">Zoom Out</button>
+    </div>
+  </body>
+</html>
