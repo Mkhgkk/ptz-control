@@ -35,17 +35,34 @@ def stop():
     stop_camera()
     return jsonify({'status': 'stopped'})
 
+def get_current_position():
+    """Retrieve the current PTZ status to get the current Pan, Tilt, and Zoom positions."""
+    try:
+        status = ptz_service.GetStatus({'ProfileToken': profile_token})
+        current_pan = status.Position.PanTilt.x
+        current_tilt = status.Position.PanTilt.y
+        current_zoom = status.Position.Zoom.x
+        return current_pan, current_tilt, current_zoom
+    except Exception as e:
+        print(f"An error occurred while getting current position: {e}")
+        return 0.0, 0.0, 0.0  # Return a default position if there's an error
+
 def move_camera(direction, zoom_amount=None):
     """Function to move camera based on the direction input or zoom to a specific level."""
     
-    # Check if the command is for zoom
     if direction in ['zoom_in', 'zoom_out'] and zoom_amount is not None:
         # Use AbsoluteMove for zoom
         absolute_move_request = ptz_service.create_type('AbsoluteMove')
         absolute_move_request.ProfileToken = profile_token
 
-        # Define the absolute zoom level
-        absolute_move_request.Position = {'Zoom': {'x': zoom_amount}}
+        # Get current Pan, Tilt, and Zoom positions
+        current_pan, current_tilt, current_zoom = get_current_position()
+
+        # Define the absolute position, keeping current Pan and Tilt, and setting new Zoom
+        absolute_move_request.Position = {
+            'PanTilt': {'x': current_pan, 'y': current_tilt},
+            'Zoom': {'x': zoom_amount}
+        }
         absolute_move_request.Speed = {'Zoom': {'x': 0.5}}  # Optional: Define zoom speed
 
         # Execute the AbsoluteMove command
